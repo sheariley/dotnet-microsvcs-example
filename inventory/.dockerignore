@@ -3,3 +3,4 @@ obj/
 Dockerfile
 .dockerignore
 *.user
+project.nuget.cache

@@ -2,6 +2,9 @@
 bin/
 obj/
 
+# Nuget
+project.nuget.cache
+
 # User-specific files
 *.user
 *.suo
