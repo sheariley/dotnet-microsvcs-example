@@ -26,7 +26,7 @@ function OrderRow({ order }: { order: Order }) {
 
 export function OrderTracker() {
   const customerId = useAppSelector(customerSelectors.selectCustomerId)
-  const { orders, status, error } = useAppSelector(customerSelectors.selectCustomerState)
+  const { orders, ordersFetchStatus, ordersFetchError } = useAppSelector(customerSelectors.selectCustomerState)
   const dispatch = useAppDispatch()
 
   useEffect(() => {
@@ -35,12 +35,12 @@ export function OrderTracker() {
     return () => clearInterval(id)
   }, [customerId, dispatch])
 
-  if (status === 'loading' && orders.length === 0) {
+  if (ordersFetchStatus === 'loading' && orders.length === 0) {
     return <span className="loading loading-spinner loading-sm" />
   }
 
-  if (status === 'error') {
-    return <div className="alert alert-error text-sm">{error}</div>
+  if (ordersFetchStatus === 'error') {
+    return <div className="alert alert-error text-sm">{ordersFetchError}</div>
   }
 
   if (orders.length === 0) {
