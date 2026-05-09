@@ -1,11 +1,8 @@
-import './App.css'
-
 function App() {
-
   return (
-    <>
-      <h1>Coming soon!</h1>
-    </>
+    <div className="min-h-screen flex items-center justify-center">
+      <span className="loading loading-spinner loading-lg" />
+    </div>
   )
 }
 
