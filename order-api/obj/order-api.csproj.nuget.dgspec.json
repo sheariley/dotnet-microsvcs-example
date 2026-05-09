@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/mnt/d/data/source/job-skill-assessments/walmart-softeng3-dotnet/dotnet-microsvcs-example/order-api/order-api.csproj": {}
+    "/mnt/d/data/source/micro-services-sandbox/dotnet-microsvcs/dotnet-microsvcs-example/order-api/order-api.csproj": {}
   },
   "projects": {
-    "/mnt/d/data/source/job-skill-assessments/walmart-softeng3-dotnet/dotnet-microsvcs-example/order-api/order-api.csproj": {
+    "/mnt/d/data/source/micro-services-sandbox/dotnet-microsvcs/dotnet-microsvcs-example/order-api/order-api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/mnt/d/data/source/job-skill-assessments/walmart-softeng3-dotnet/dotnet-microsvcs-example/order-api/order-api.csproj",
+        "projectUniqueName": "/mnt/d/data/source/micro-services-sandbox/dotnet-microsvcs/dotnet-microsvcs-example/order-api/order-api.csproj",
         "projectName": "order-api",
-        "projectPath": "/mnt/d/data/source/job-skill-assessments/walmart-softeng3-dotnet/dotnet-microsvcs-example/order-api/order-api.csproj",
+        "projectPath": "/mnt/d/data/source/micro-services-sandbox/dotnet-microsvcs/dotnet-microsvcs-example/order-api/order-api.csproj",
         "packagesPath": "/home/sheariley/.nuget/packages/",
-        "outputPath": "/mnt/d/data/source/job-skill-assessments/walmart-softeng3-dotnet/dotnet-microsvcs-example/order-api/obj/",
+        "outputPath": "/mnt/d/data/source/micro-services-sandbox/dotnet-microsvcs/dotnet-microsvcs-example/order-api/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/home/sheariley/.nuget/NuGet/NuGet.Config"
@@ -47,6 +47,16 @@
             "Microsoft.AspNetCore.OpenApi": {
               "target": "Package",
               "version": "[10.0.7, )"
+            },
+            "Microsoft.EntityFrameworkCore.Design": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[10.0.7, )"
+            },
+            "Npgsql.EntityFrameworkCore.PostgreSQL": {
+              "target": "Package",
+              "version": "[10.0.1, )"
             },
             "Npgsql.OpenTelemetry": {
               "target": "Package",
