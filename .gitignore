@@ -1,0 +1,21 @@
+# .NET build outputs
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+.vs/
+.idea/
+.vscode/settings.json
+
+# Secrets / local env overrides
+.env
+
+# Node / Vite
+node_modules/
+dist/
+.vite/
+
+# macOS
+.DS_Store
