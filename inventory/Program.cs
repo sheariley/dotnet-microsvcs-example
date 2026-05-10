@@ -1,4 +1,6 @@
+using Confluent.Kafka;
 using inventory.Data;
+using inventory.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using OpenTelemetry.Logs;
@@ -14,6 +16,23 @@ builder.Services.AddOpenApi();
 builder.Services.AddDbContext<InventoryDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddSingleton(new InstrumentedProducerBuilder<string, string>(
+    new ProducerConfig { BootstrapServers = builder.Configuration["Kafka:BootstrapServers"] }));
+
+builder.Services.AddSingleton<IProducer<string, string>>(sp =>
+    sp.GetRequiredService<InstrumentedProducerBuilder<string, string>>().Build());
+
+builder.Services.AddSingleton(new InstrumentedConsumerBuilder<string, string>(
+    new ConsumerConfig
+    {
+        BootstrapServers = builder.Configuration["Kafka:BootstrapServers"],
+        GroupId = "inventory-group",
+        AutoOffsetReset = AutoOffsetReset.Earliest,
+        EnableAutoCommit = false,
+    }));
+
+builder.Services.AddHostedService<OrderPlacedConsumer>();
+
 builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>
         policy.WithOrigins("http://localhost:5173", "http://localhost:5174")
@@ -27,10 +46,15 @@ builder.Services.AddOpenTelemetry()
         .AddAspNetCoreInstrumentation()
         .AddHttpClientInstrumentation()
         .AddNpgsql()
+        .AddSource("OpenTelemetry.Instrumentation.ConfluentKafka")
+        .AddKafkaProducerInstrumentation<string, string>()
+        .AddKafkaConsumerInstrumentation<string, string>()
         .AddOtlpExporter())
     .WithMetrics(m => m
         .AddAspNetCoreInstrumentation()
         .AddHttpClientInstrumentation()
+        .AddKafkaProducerInstrumentation<string, string>()
+        .AddKafkaConsumerInstrumentation<string, string>()
         .AddOtlpExporter());
 
 builder.Logging.AddOpenTelemetry(o =>

@@ -50,6 +50,7 @@ services:
       OTEL_EXPORTER_OTLP_PROTOCOL: grpc
       OTEL_SERVICE_NAME: order-api
       ConnectionStrings__DefaultConnection: "Host=postgres;Database=order_api;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres}"
+      Kafka__BootstrapServers: kafka:9092
     depends_on:
       - postgres
       - kafka
@@ -66,6 +67,7 @@ services:
       OTEL_EXPORTER_OTLP_PROTOCOL: grpc
       OTEL_SERVICE_NAME: inventory
       ConnectionStrings__DefaultConnection: "Host=postgres;Database=inventory;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres}"
+      Kafka__BootstrapServers: kafka:9092
     depends_on:
       - postgres
       - kafka
