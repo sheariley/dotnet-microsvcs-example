@@ -8,6 +8,7 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using order_api.Data;
 using order_api.Messaging;
+using order_api.WebSockets;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,6 +37,7 @@ builder.Services.AddSingleton(new InstrumentedConsumerBuilder<string, string>(
     }));
 
 builder.Services.AddHostedService<OrderEventConsumer>();
+builder.Services.AddSingleton<WebSocketHub>();
 
 builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>
@@ -51,6 +53,7 @@ builder.Services.AddOpenTelemetry()
         .AddHttpClientInstrumentation()
         .AddNpgsql()
         .AddSource("OpenTelemetry.Instrumentation.ConfluentKafka")
+        .AddSource("order-api")
         .AddKafkaProducerInstrumentation<string, string>()
         .AddKafkaConsumerInstrumentation<string, string>()
         .AddOtlpExporter())
@@ -79,7 +82,11 @@ using (var scope = app.Services.CreateScope())
 if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 
+app.UseWebSockets();
 app.UseCors();
+
+app.UseWebSocketHub("/ws/orders");
+
 app.MapControllers();
 app.MapGet("/healthz", () => Results.Ok(new { status = "healthy" }));
 

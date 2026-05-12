@@ -1,16 +1,20 @@
+using System.Diagnostics;
 using System.Text.Json;
 using Confluent.Kafka;
 using order_api.Data;
 using order_api.Models;
+using order_api.WebSockets;
 
 namespace order_api.Messaging;
 
 public class OrderEventConsumer(
     IServiceScopeFactory scopeFactory,
     InstrumentedConsumerBuilder<string, string> consumerBuilder,
+    WebSocketHub hub,
     ILogger<OrderEventConsumer> logger) : BackgroundService
 {
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
+    private static readonly ActivitySource ActivitySource = new("order-api");
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -58,5 +62,18 @@ public class OrderEventConsumer(
 
         await db.SaveChangesAsync(ct);
         logger.LogInformation("Order {OrderId} advanced to {Status}", order.Id, order.Status);
+
+        using var activity = ActivitySource.StartActivity("order.ws-push");
+        activity?.SetTag("order.id", order.Id.ToString());
+        activity?.SetTag("customer.id", order.CustomerId);
+
+        var message = JsonSerializer.Serialize(new
+        {
+            orderId = order.Id,
+            status = order.Status.ToString(),
+            updatedAt = order.UpdatedAt,
+        });
+
+        await hub.PushAsync(order.CustomerId, message, ct);
     }
 }

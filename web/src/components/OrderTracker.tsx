@@ -1,5 +1,4 @@
-import { useEffect } from 'react'
-import { customerSelectors, customerThunks, useAppDispatch, useAppSelector } from '../store'
+import { customerSelectors, useAppSelector } from '../store'
 import type { OrderStatus, Order } from '../types'
 
 const STATUS_COLOR: Record<OrderStatus, string> = {
@@ -25,15 +24,7 @@ function OrderRow({ order }: { order: Order }) {
 }
 
 export function OrderTracker() {
-  const customerId = useAppSelector(customerSelectors.selectCustomerId)
   const { orders, ordersFetchStatus, ordersFetchError } = useAppSelector(customerSelectors.selectCustomerState)
-  const dispatch = useAppDispatch()
-
-  useEffect(() => {
-    dispatch(customerThunks.fetchOrders(customerId))
-    const id = setInterval(() => dispatch(customerThunks.fetchOrders(customerId)), 2000)
-    return () => clearInterval(id)
-  }, [customerId, dispatch])
 
   if (ordersFetchStatus === 'loading' && orders.length === 0) {
     return <span className="loading loading-spinner loading-sm" />

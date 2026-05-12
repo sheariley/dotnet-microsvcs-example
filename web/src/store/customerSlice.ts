@@ -1,6 +1,12 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
-import type { Order } from '../types'
+import type { Order, OrderStatus } from '../types'
 import { fetchOrders } from './customerThunks'
+
+interface OrderStatusUpdate {
+  orderId: string
+  status: OrderStatus
+  updatedAt: string
+}
 
 export interface CustomerState {
   customerId: string
@@ -25,6 +31,13 @@ export const customerSlice = createSlice({
     },
     addOrder(state, action: PayloadAction<Order>) {
       state.orders.unshift(action.payload)
+    },
+    updateOrder(state, action: PayloadAction<OrderStatusUpdate>) {
+      const order = state.orders.find(o => o.id === action.payload.orderId)
+      if (order) {
+        order.status = action.payload.status
+        order.updatedAt = action.payload.updatedAt
+      }
     },
   },
   extraReducers(builder) {
