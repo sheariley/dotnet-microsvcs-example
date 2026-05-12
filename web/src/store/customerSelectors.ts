@@ -1,9 +1,9 @@
 import { createSelector } from '@reduxjs/toolkit'
 import { type RootState } from './store'
 
-export const selectCustomerState = createSelector(
+export const selectOrdersFetchStatus = createSelector(
   (state: RootState) => state.customer,
-  state => state
+  state => ({ ordersFetchStatus: state.ordersFetchStatus, ordersFetchError: state.ordersFetchError })
 )
 
 export const selectCustomerId = createSelector(
@@ -14,4 +14,9 @@ export const selectCustomerId = createSelector(
 export const selectOrders = createSelector(
   (state: RootState) => state.customer,
   (customerState) => customerState.orders
+)
+
+export const selectOrdersSortedByCreatedAt = createSelector(
+  selectOrders,
+  orders => [...orders].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
 )

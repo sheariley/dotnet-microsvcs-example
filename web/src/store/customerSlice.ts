@@ -30,7 +30,8 @@ export const customerSlice = createSlice({
       state.customerId = action.payload
     },
     addOrder(state, action: PayloadAction<Order>) {
-      state.orders.unshift(action.payload)
+      if (!state.orders.some(o => o.id === action.payload.id))
+        state.orders.push(action.payload)
     },
     updateOrder(state, action: PayloadAction<OrderStatusUpdate>) {
       const order = state.orders.find(o => o.id === action.payload.orderId)

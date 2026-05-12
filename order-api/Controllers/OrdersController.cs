@@ -5,12 +5,13 @@ using Microsoft.EntityFrameworkCore;
 using order_api.Data;
 using order_api.Messaging;
 using order_api.Models;
+using order_api.WebSockets;
 
 namespace order_api.Controllers;
 
 [ApiController]
 [Route("orders")]
-public class OrdersController(OrderDbContext db, IProducer<string, string> producer) : ControllerBase
+public class OrdersController(OrderDbContext db, IProducer<string, string> producer, WebSocketHub hub) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateOrderRequest req)
@@ -47,6 +48,12 @@ public class OrdersController(OrderDbContext db, IProducer<string, string> produ
             Key = order.Id.ToString(),
             Value = JsonSerializer.Serialize(envelope),
         });
+
+        await hub.PushAsync(order.CustomerId, JsonSerializer.Serialize(new
+        {
+            type = "OrderCreated",
+            order,
+        }, JsonSerializerOptions.Web));
 
         return CreatedAtAction(nameof(GetById), new { id = order.Id }, order);
     }

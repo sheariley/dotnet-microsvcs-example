@@ -1,6 +1,9 @@
 import { customerSelectors, useAppSelector } from '../store'
 import type { OrderStatus, Order } from '../types'
 
+const fmtDateCell = (iso: string) =>
+  new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+
 const STATUS_COLOR: Record<OrderStatus, string> = {
   'Placed': 'badge-info',
   'Reserved':  'badge-warning',
@@ -19,12 +22,15 @@ function OrderRow({ order }: { order: Order }) {
           {order.status}
         </span>
       </td>
+      <td className="text-xs text-base-content/60">{fmtDateCell(order.createdAt)}</td>
+      <td className="text-xs text-base-content/60">{fmtDateCell(order.updatedAt)}</td>
     </tr>
   )
 }
 
 export function OrderTracker() {
-  const { orders, ordersFetchStatus, ordersFetchError } = useAppSelector(customerSelectors.selectCustomerState)
+  const { ordersFetchStatus, ordersFetchError } = useAppSelector(customerSelectors.selectOrdersFetchStatus)
+  const orders = useAppSelector(customerSelectors.selectOrdersSortedByCreatedAt)
 
   if (ordersFetchStatus === 'loading' && orders.length === 0) {
     return <span className="loading loading-spinner loading-sm" />
@@ -51,6 +57,8 @@ export function OrderTracker() {
             <th>Product</th>
             <th className="text-right">Qty</th>
             <th>Status</th>
+            <th>Created</th>
+            <th>Updated</th>
           </tr>
         </thead>
         <tbody>
