@@ -29,10 +29,15 @@ public class OrderEventConsumer(
                 if (result.IsPartitionEOF || result.Message?.Value is null)
                     continue;
 
+                // Capture the consumer span's context before any await — the instrumentation
+                // disposes the activity when Consume() returns, so it won't be in
+                // Activity.Current by the time HandleOutcome resumes after an await.
+                var consumeContext = Activity.Current?.Context ?? default;
+
                 var envelope = JsonSerializer.Deserialize<OrderEvent>(result.Message.Value, JsonOpts);
 
                 if (envelope?.EventType is "OrderReserved" or "OrderRejected")
-                    await HandleOutcome(envelope, stoppingToken);
+                    await HandleOutcome(envelope, consumeContext, stoppingToken);
 
                 consumer.Commit(result);
             }
@@ -47,7 +52,7 @@ public class OrderEventConsumer(
         consumer.Close();
     }
 
-    private async Task HandleOutcome(OrderEvent envelope, CancellationToken ct)
+    private async Task HandleOutcome(OrderEvent envelope, ActivityContext consumeContext, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<OrderDbContext>();
@@ -63,12 +68,14 @@ public class OrderEventConsumer(
         await db.SaveChangesAsync(ct);
         logger.LogInformation("Order {OrderId} advanced to {Status}", order.Id, order.Status);
 
-        using var activity = ActivitySource.StartActivity("order.ws-push");
+        using var activity = ActivitySource.StartActivity("order.ws-push", ActivityKind.Internal, consumeContext);
+        activity?.SetTag("ws.message.type", "OrderStatusChanged");
         activity?.SetTag("order.id", order.Id.ToString());
         activity?.SetTag("customer.id", order.CustomerId);
 
         var message = JsonSerializer.Serialize(new
         {
+            type = "OrderStatusChanged",
             orderId = order.Id,
             status = order.Status.ToString(),
             updatedAt = order.UpdatedAt,

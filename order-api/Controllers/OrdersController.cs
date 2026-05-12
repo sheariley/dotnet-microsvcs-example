@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using Confluent.Kafka;
 using Microsoft.AspNetCore.Mvc;
@@ -13,6 +14,8 @@ namespace order_api.Controllers;
 [Route("orders")]
 public class OrdersController(OrderDbContext db, IProducer<string, string> producer, WebSocketHub hub) : ControllerBase
 {
+    private static readonly ActivitySource ActivitySource = new("order-api");
+
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateOrderRequest req)
     {
@@ -49,11 +52,18 @@ public class OrdersController(OrderDbContext db, IProducer<string, string> produ
             Value = JsonSerializer.Serialize(envelope),
         });
 
-        await hub.PushAsync(order.CustomerId, JsonSerializer.Serialize(new
+        using (var activity = ActivitySource.StartActivity("order.ws-push", ActivityKind.Internal))
         {
-            type = "OrderCreated",
-            order,
-        }, JsonSerializerOptions.Web));
+            activity?.SetTag("ws.message.type", "OrderCreated");
+            activity?.SetTag("order.id", order.Id.ToString());
+            activity?.SetTag("customer.id", order.CustomerId);
+
+            await hub.PushAsync(order.CustomerId, JsonSerializer.Serialize(new
+            {
+                type = "OrderCreated",
+                order,
+            }, JsonSerializerOptions.Web));
+        }
 
         return CreatedAtAction(nameof(GetById), new { id = order.Id }, order);
     }
