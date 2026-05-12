@@ -62,7 +62,7 @@ public class OrdersController(OrderDbContext db, IProducer<string, string> produ
             {
                 type = "OrderCreated",
                 order,
-            }, JsonSerializerOptions.Web));
+            }, ApiJsonOptions.Shared));
         }
 
         return CreatedAtAction(nameof(GetById), new { id = order.Id }, order);

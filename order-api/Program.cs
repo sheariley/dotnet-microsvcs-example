@@ -1,4 +1,3 @@
-using System.Text.Json.Serialization;
 using Confluent.Kafka;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -6,6 +5,7 @@ using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using order_api;
 using order_api.Data;
 using order_api.Messaging;
 using order_api.WebSockets;
@@ -13,8 +13,12 @@ using order_api.WebSockets;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers()
-  .AddJsonOptions(o =>
-    o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+    .AddJsonOptions(o =>
+    {
+        o.JsonSerializerOptions.PropertyNamingPolicy = ApiJsonOptions.Shared.PropertyNamingPolicy;
+        foreach (var converter in ApiJsonOptions.Shared.Converters)
+            o.JsonSerializerOptions.Converters.Add(converter);
+    });
 
 builder.Services.AddOpenApi();
 

@@ -94,9 +94,9 @@ public class OrderEventConsumer(
         {
             type = "OrderStatusChanged",
             orderId = order.Id,
-            status = order.Status.ToString(),
+            status = order.Status,
             updatedAt = order.UpdatedAt,
-        });
+        }, ApiJsonOptions.Shared);
 
         await hub.PushAsync(order.CustomerId, message, ct);
     }
