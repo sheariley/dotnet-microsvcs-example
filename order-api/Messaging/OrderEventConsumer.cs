@@ -21,23 +21,40 @@ public class OrderEventConsumer(
         using var consumer = consumerBuilder.Build();
         consumer.Subscribe("orders");
 
+        // ActivityStarted fires synchronously on the consuming thread inside Consume(), before
+        // the instrumentation disposes the span. We capture the context here (it's just an
+        // immutable struct) so we can parent our process span under the correct consumer span
+        // rather than the inventory producer span that's embedded in the message headers.
+        ActivityContext consumerSpanContext = default;
+        using var contextCapture = new ActivityListener
+        {
+            ShouldListenTo = source => source.Name == "OpenTelemetry.Instrumentation.ConfluentKafka",
+            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            ActivityStarted = a =>
+            {
+                if (a.Kind == ActivityKind.Consumer) consumerSpanContext = a.Context;
+            },
+        };
+        ActivitySource.AddActivityListener(contextCapture);
+
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
+                consumerSpanContext = default;
                 var result = consumer.Consume(stoppingToken);
                 if (result.IsPartitionEOF || result.Message?.Value is null)
                     continue;
 
-                // Capture the consumer span's context before any await — the instrumentation
-                // disposes the activity when Consume() returns, so it won't be in
-                // Activity.Current by the time HandleOutcome resumes after an await.
-                var consumeContext = Activity.Current?.Context ?? default;
+                using var processActivity = ActivitySource.StartActivity(
+                    "orders.process", ActivityKind.Consumer, consumerSpanContext);
+                processActivity?.SetTag("messaging.system", "kafka");
+                processActivity?.SetTag("messaging.destination", "orders");
 
                 var envelope = JsonSerializer.Deserialize<OrderEvent>(result.Message.Value, JsonOpts);
 
                 if (envelope?.EventType is "OrderReserved" or "OrderRejected")
-                    await HandleOutcome(envelope, consumeContext, stoppingToken);
+                    await HandleOutcome(envelope, stoppingToken);
 
                 consumer.Commit(result);
             }
@@ -52,7 +69,7 @@ public class OrderEventConsumer(
         consumer.Close();
     }
 
-    private async Task HandleOutcome(OrderEvent envelope, ActivityContext consumeContext, CancellationToken ct)
+    private async Task HandleOutcome(OrderEvent envelope, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<OrderDbContext>();
@@ -68,7 +85,7 @@ public class OrderEventConsumer(
         await db.SaveChangesAsync(ct);
         logger.LogInformation("Order {OrderId} advanced to {Status}", order.Id, order.Status);
 
-        using var activity = ActivitySource.StartActivity("order.ws-push", ActivityKind.Internal, consumeContext);
+        using var activity = ActivitySource.StartActivity("order.ws-push", ActivityKind.Internal);
         activity?.SetTag("ws.message.type", "OrderStatusChanged");
         activity?.SetTag("order.id", order.Id.ToString());
         activity?.SetTag("customer.id", order.CustomerId);
