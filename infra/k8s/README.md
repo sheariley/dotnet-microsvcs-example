@@ -5,40 +5,39 @@ Runs the same stack as `docker-compose.yml` on a local [kind](https://kind.sigs.
 ## Quick start
 
 ```bash
+# 1. Create cluster, build images, apply manifests
 chmod +x infra/k8s/setup.sh
 ./infra/k8s/setup.sh
+
+# 2. Wait for all services, then start port-forwards (Ctrl+C to stop)
+chmod +x infra/k8s/wait-ready.sh
+./infra/k8s/wait-ready.sh
 ```
 
-Then in two separate terminals:
-
-```bash
-kubectl port-forward svc/order-api 5001:8080
-kubectl port-forward svc/aspire-dashboard 18888:18888
-```
-
-Open the React app (`npm run dev` inside `web/`) and the Aspire Dashboard at `http://localhost:18888`. Traces flow end-to-end exactly as they do under Compose.
+Then start the React dev server (`npm run dev` inside `web/`). The app connects to `order-api` on `localhost:5001` as usual. Open the Aspire Dashboard at `http://localhost:18888` to verify traces are flowing end-to-end.
 
 ## Teardown
 
 ```bash
-kind delete cluster --name microsvcs
+kind delete cluster --name dotnet-microsvcs-example
 ```
 
 ## Structure
 
 ```
 infra/k8s/
-  setup.sh                   # creates cluster, builds images, installs everything
-  kustomization.yaml          # kubectl apply -k entry point (excludes Kafka)
-  configmap.yaml              # shared env vars (OTel endpoint, Kafka bootstrap)
+  setup.sh                   # creates cluster, builds/loads images, applies manifests
+  wait-ready.sh              # waits for all rollouts, then starts port-forwards
+  kustomization.yaml         # kubectl apply -k entry point
+  configmap.yaml             # shared env vars (OTel endpoint, Kafka bootstrap)
   postgres/
-    pvc.yaml                  # 2 GiB persistent volume claim
+    pvc.yaml                 # 2 GiB persistent volume claim
     deployment.yaml
     service.yaml
   kafka/
-    statefulset.yaml          # single-broker KRaft StatefulSet (confluentinc/cp-kafka:7.9.0)
-    service.yaml              # ClusterIP for client connections (kafka:9092)
-    service-headless.yaml     # headless Service required by StatefulSet for pod DNS
+    statefulset.yaml         # single-broker KRaft StatefulSet (confluentinc/cp-kafka:7.9.0)
+    service.yaml             # ClusterIP for client connections (kafka:9092)
+    service-headless.yaml    # headless Service required by StatefulSet for pod DNS
   order-api/
     deployment.yaml
     service.yaml
@@ -47,7 +46,7 @@ infra/k8s/
     service.yaml
   aspire-dashboard/
     deployment.yaml
-    service.yaml              # exposes :18888 (UI) and :18889 (OTLP gRPC)
+    service.yaml             # exposes :18888 (UI) and :18889 (OTLP gRPC)
 ```
 
 ## Compose → Kubernetes mapping
